@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str = "your-secret-key-change-in-production"
+    
+    # External Services
+    axlerate_base_url: str = "http://axlerate:8000"
 
 
 @lru_cache()
