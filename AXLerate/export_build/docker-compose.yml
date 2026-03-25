@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  axlerate:
+    build: .
+    container_name: axlerate-service
+    # this command will make sure that the service will be restarted unless it is stopped manually
+    restart: unless-stopped 
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
