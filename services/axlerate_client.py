@@ -40,15 +40,17 @@ class AXLerateClient:
     Provides methods to fetch device information from Cisco CUCM.
     """
     
-    def __init__(self, base_url: Optional[str] = None):
+    def __init__(self, base_url: Optional[str] = None, sql_endpoint: Optional[str] = None):
         """
         Initialize the AXLerate client.
         
         Args:
             base_url: Base URL of the AXLerate service. If None, uses config.
+            sql_endpoint: SQL query endpoint. If None, uses default.
         """
         self.settings = get_settings()
         self.base_url = base_url or self.settings.axlerate_base_url
+        self.sql_endpoint = sql_endpoint or "/axl/sql/query"  # Standard AXLerate endpoint
         self.client = httpx.AsyncClient(
             timeout=30.0,
             headers={"Content-Type": "application/json"}
@@ -180,7 +182,7 @@ class AXLerateClient:
         
         try:
             logger.info(f"Fetching endpoints from AXLerate: {self.base_url}")
-            response_data = await self._make_request("/api/v1/cucm/executeSQLQuery", payload)
+            response_data = await self._make_request(self.sql_endpoint, payload)
             
             # Extract the executeSQLQuery data from response
             if "executeSQLQuery" not in response_data:
@@ -243,7 +245,7 @@ class AXLerateClient:
         
         try:
             logger.info(f"Fetching users from AXLerate: {self.base_url}")
-            response_data = await self._make_request("/api/v1/cucm/executeSQLQuery", payload)
+            response_data = await self._make_request(self.sql_endpoint, payload)
             
             # Extract executeSQLQuery data from response
             if "executeSQLQuery" not in response_data:

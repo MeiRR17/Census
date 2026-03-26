@@ -91,8 +91,8 @@ class SyncEngine:
     async def _sync_cucm_users(self) -> Dict:
         """Sync users from CUCM via AXLerate."""
         try:
-            axl_client = AXLerateClient()
-            users_data = await axl_client.fetch_cucm_users()
+            async with AXLerateClient() as axl_client:
+                users_data = await axl_client.fetch_cucm_users()
             
             if not users_data:
                 logger.warning("No users returned from CUCM")
@@ -157,8 +157,8 @@ class SyncEngine:
     async def _fetch_cucm_devices(self) -> List[Dict]:
         """Fetch devices from CUCM via AXLerate."""
         try:
-            axl_client = AXLerateClient()
-            devices = await axl_client.fetch_registered_endpoints()
+            async with AXLerateClient() as axl_client:
+                devices = await axl_client.fetch_registered_endpoints()
             
             logger.info(f"✅ Fetched {len(devices)} devices from CUCM")
             return devices
@@ -235,7 +235,10 @@ class SyncEngine:
                 logger.info(f"✅ Found {len(unique_switches)} unique switches")
                 switches_synced = len(unique_switches)
             
-            # Process devices
+            # Process devices in bulk
+            db_devices = []
+            switch_connections = []
+            
             for device_data in cucm_devices:
                 # Get topology data for this device
                 ip_address = device_data.get("ip_address")
@@ -258,9 +261,18 @@ class SyncEngine:
                     "last_seen_from_cucm": datetime.utcnow(),
                     "updated_at": datetime.utcnow()
                 }
+                db_devices.append(db_device)
                 
-                # UPSERT device
-                stmt = insert(Device).values(db_device)
+                # Prepare switch connection if topology data exists
+                if topology_data and topology_data.get("switch_name"):
+                    switch_connections.append({
+                        "device_name": device_data["name"],
+                        "topology_data": topology_data
+                    })
+            
+            # Bulk UPSERT devices
+            if db_devices:
+                stmt = insert(Device).values(db_devices)
                 stmt = stmt.on_conflict_do_update(
                     index_elements=['name'],
                     set_=dict(
@@ -277,13 +289,13 @@ class SyncEngine:
                 )
                 
                 await self.db.execute(stmt)
-                devices_synced += 1
+                devices_synced = len(db_devices)
                 
-                # Create switch connection if topology data exists
-                if topology_data and topology_data.get("switch_name"):
+                # Create switch connections in bulk
+                for switch_conn in switch_connections:
                     await self._create_switch_connection(
-                        device_data["name"],
-                        topology_data
+                        switch_conn["device_name"],
+                        switch_conn["topology_data"]
                     )
                     devices_with_topology += 1
             

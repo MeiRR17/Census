@@ -81,9 +81,8 @@ async def init_db() -> None:
             logger.warning(f"pgvector extension not available: {e}")
             logger.info("Continuing without pgvector extension...")
     
-    # Create all tables using async engine
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Note: Tables already created via sync engine above
+    # No need to create them again with async engine
     
 
 

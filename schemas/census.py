@@ -43,6 +43,24 @@ class SwitchConnectionResponse(BaseResponse):
     vlan: Optional[str] = None
 
 
+class LineResponse(BaseResponse):
+    """Telephone line information response schema."""
+    directory_number: str
+    partition: Optional[str] = None
+    css: Optional[str] = None  # Mapped from usage_profile
+    device_pool: Optional[str] = None  # Mapped from cucm_cluster
+    
+    @classmethod
+    def from_line(cls, line):
+        """Create LineResponse from Line model with field mapping."""
+        return cls(
+            directory_number=line.directory_number,
+            partition=line.partition,
+            css=line.usage_profile,  # Map usage_profile to css
+            device_pool=line.cucm_cluster  # Map cucm_cluster to device_pool
+        )
+
+
 class DeviceResponse(BaseResponse):
     """Device/Endpoint information response schema."""
     mac_address: Optional[str] = None
@@ -79,24 +97,6 @@ class DeviceResponse(BaseResponse):
             owner=owner,
             switch_connections=switch_connections,
             lines=lines
-        )
-
-
-class LineResponse(BaseResponse):
-    """Telephone line information response schema."""
-    directory_number: str
-    partition: Optional[str] = None
-    css: Optional[str] = None  # Mapped from usage_profile
-    device_pool: Optional[str] = None  # Mapped from cucm_cluster
-    
-    @classmethod
-    def from_line(cls, line):
-        """Create LineResponse from Line model with field mapping."""
-        return cls(
-            directory_number=line.directory_number,
-            partition=line.partition,
-            css=line.usage_profile,  # Map usage_profile to css
-            device_pool=line.cucm_cluster  # Map cucm_cluster to device_pool
         )
 
 
