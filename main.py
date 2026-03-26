@@ -12,6 +12,8 @@ from sqlalchemy import text
 
 from core.config import get_settings, Settings
 from database.session import init_db, get_db, close_db_connections
+from api.routers.census import census_router
+from core.scheduler import start_scheduler, stop_scheduler
 
 settings = get_settings()
 
@@ -23,16 +25,24 @@ async def lifespan(app: FastAPI):
     Handles startup and shutdown events.
     """
     # Startup
-    print(f"🚀 Starting {settings.APP_NAME} v{settings.APP_VERSION}...")
+    print(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}...")
+    
+    # 1. Initialize database
     await init_db()
-    print("✅ Database initialized successfully")
+    print("Database initialized successfully")
+    
+    # 2. Start background scheduler
+    start_scheduler()
+    print("Background scheduler started")
     
     yield
     
     # Shutdown
-    print("🛑 Shutting down...")
+    print("Shutting down...")
+    stop_scheduler()
+    print("Scheduler stopped")
     await close_db_connections()
-    print("👋 Goodbye!")
+    print("Goodbye!")
 
 
 # Create FastAPI application
@@ -53,6 +63,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include census router
+app.include_router(census_router)
 
 
 @app.get("/health", tags=["Health"])

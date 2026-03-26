@@ -88,8 +88,8 @@ class Device(Base):
         nullable=True
     )
     
-    # Vector embedding for semantic search
-    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(384), nullable=True)
+    # Vector embedding for semantic search (pgvector - optional for MVP)
+    # embedding: Mapped[Optional[Vector]] = mapped_column(Vector(384), nullable=True)
     
     # Raw data storage
     raw_cucm_data: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)

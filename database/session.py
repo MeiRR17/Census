@@ -52,28 +52,39 @@ async def get_db() -> AsyncSession:
 
 async def init_db() -> None:
     """
-    Initialize the database:
-    1. Create pgvector extension if not exists
-    2. Create all tables based on Base metadata
+    Initialize database:
+    1. Create all tables based on Base metadata
+    2. Try to create pgvector extension if available
     
     This function uses a sync connection for initialization
     since CREATE EXTENSION requires a sync operation.
     """
     from sqlalchemy import create_engine
+    import logging
+    
+    logger = logging.getLogger(__name__)
     
     # Create sync engine for initialization
     sync_engine = create_engine(settings.DATABASE_URL_SYNC, future=True)
     
     with sync_engine.connect() as conn:
-        # Create pgvector extension
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
-        conn.commit()
+        # Create all tables first
+        Base.metadata.create_all(conn)
+        logger.info("Database tables created successfully")
+        
+        # Try to create pgvector extension (optional for MVP)
+        try:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+            conn.commit()
+            logger.info("pgvector extension created successfully")
+        except Exception as e:
+            logger.warning(f"pgvector extension not available: {e}")
+            logger.info("Continuing without pgvector extension...")
     
     # Create all tables using async engine
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
-    await async_engine.dispose()
 
 
 async def close_db_connections() -> None:
