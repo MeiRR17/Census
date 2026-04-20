@@ -14,212 +14,220 @@
 services:
 
   # ===========================================================================
-  # Service 1: CUCM Database
+  # Service 1: CUCM Database (DISABLED - We only need CENSUS)
   # ===========================================================================
-  cucm-postgres:
-    image: postgres:15-alpine
-    container_name: telephony-cucm-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: cucm_db
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
-    volumes:
-      - cucm_postgres_data:/var/lib/postgresql/data
-      - ./postgres/cucm-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - telephony-network
+  # cucm-postgres:
+  #   image: postgres:15-alpine
+  #   container_name: telephony-cucm-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: cucm_db
+  #     POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+  #   volumes:
+  #     - cucm_postgres_data:/var/lib/postgresql/data
+  #     - ./postgres/cucm-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  #   ports:
+  #     - "5433:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #   networks:
+  #     - telephony-network
+  #     - cma-global-network
 
   # ===========================================================================
-  # Service 2: UCCX Database
+  # Service 2: UCCX Database (DISABLED - We only need CENSUS)
   # ===========================================================================
-  uccx-postgres:
-    image: postgres:15-alpine
-    container_name: telephony-uccx-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: uccx_db
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
-    volumes:
-      - uccx_postgres_data:/var/lib/postgresql/data
-      - ./postgres/uccx-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5434:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - telephony-network
+  # uccx-postgres:
+  #   image: postgres:15-alpine
+  #   container_name: telephony-uccx-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: uccx_db
+  #     POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+  #   volumes:
+  #     - uccx_postgres_data:/var/lib/postgresql/data
+  #     - ./postgres/uccx-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  #   ports:
+  #     - "5434:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #   networks:
+  #     - telephony-network
+  #     - cma-global-network
 
   # ===========================================================================
-  # Service 3: CMS Database
+  # Service 3: CMS Database (DISABLED - We only need CENSUS)
   # ===========================================================================
-  cms-postgres:
-    image: postgres:15-alpine
-    container_name: telephony-cms-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: cms_db
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
-    volumes:
-      - cms_postgres_data:/var/lib/postgresql/data
-      - ./postgres/cms-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5435:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - telephony-network
+  # cms-postgres:
+  #   image: postgres:15-alpine
+  #   container_name: telephony-cms-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: cms_db
+  #     POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+  #   volumes:
+  #     - cms_postgres_data:/var/lib/postgresql/data
+  #     - ./postgres/cms-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  #   ports:
+  #     - "5435:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #   networks:
+  #     - telephony-network
+  #     - cma-global-network
 
   # ===========================================================================
-  # Service 4: IMP Database
+  # Service 4: IMP Database (DISABLED - We only need CENSUS)
   # ===========================================================================
-  imp-postgres:
-    image: postgres:15-alpine
-    container_name: telephony-imp-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: imp_db
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
-    volumes:
-      - imp_postgres_data:/var/lib/postgresql/data
-      - ./postgres/imp-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5436:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - telephony-network
+  # imp-postgres:
+  #   image: postgres:15-alpine
+  #   container_name: telephony-imp-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: imp_db
+  #     POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+  #   volumes:
+  #     - imp_postgres_data:/var/lib/postgresql/data
+  #     - ./postgres/imp-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  #   ports:
+  #     - "5436:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #   networks:
+  #     - telephony-network
+  #     - cma-global-network
 
   # ===========================================================================
-  # Service 5: Meeting Place Database
+  # Service 5: Meeting Place Database (DISABLED - We only need CENSUS)
   # ===========================================================================
-  meeting-place-postgres:
-    image: postgres:15-alpine
-    container_name: telephony-meeting-place-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: meeting_place_db
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
-    volumes:
-      - meeting_place_postgres_data:/var/lib/postgresql/data
-      - ./postgres/meeting-place-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5437:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - telephony-network
+  # meeting-place-postgres:
+  #   image: postgres:15-alpine
+  #   container_name: telephony-meeting-place-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: meeting_place_db
+  #     POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+  #   volumes:
+  #     - meeting_place_postgres_data:/var/lib/postgresql/data
+  #     - ./postgres/meeting-place-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  #   ports:
+  #     - "5437:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #   networks:
+  #     - telephony-network
+  #     - cma-global-network
 
   # ===========================================================================
-  # Service 6: TGW Database
+  # Service 6: TGW Database (DISABLED - We only need CENSUS)
   # ===========================================================================
-  tgw-postgres:
-    image: postgres:15-alpine
-    container_name: telephony-tgw-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: tgw_db
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
-    volumes:
-      - tgw_postgres_data:/var/lib/postgresql/data
-      - ./postgres/tgw-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5438:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - telephony-network
+  # tgw-postgres:
+  #   image: postgres:15-alpine
+  #   container_name: telephony-tgw-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: tgw_db
+  #     POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+  #   volumes:
+  #     - tgw_postgres_data:/var/lib/postgresql/data
+  #     - ./postgres/tgw-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  #   ports:
+  #     - "5438:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #   networks:
+  #     - telephony-network
+  #     - cma-global-network
 
   # ===========================================================================
-  # Service 7: SBC Database
+  # Service 7: SBC Database (DISABLED - We only need CENSUS)
   # ===========================================================================
-  sbc-postgres:
-    image: postgres:15-alpine
-    container_name: telephony-sbc-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: sbc_db
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
-    volumes:
-      - sbc_postgres_data:/var/lib/postgresql/data
-      - ./postgres/sbc-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5439:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - telephony-network
+  # sbc-postgres:
+  #   image: postgres:15-alpine
+  #   container_name: telephony-sbc-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: sbc_db
+  #     POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+  #   volumes:
+  #     - sbc_postgres_data:/var/lib/postgresql/data
+  #     - ./postgres/sbc-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  #   ports:
+  #     - "5439:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #   networks:
+  #     - telephony-network
+  #     - cma-global-network
 
   # ===========================================================================
-  # Service 8: Expressway Database
+  # Service 8: Expressway Database (DISABLED - We only need CENSUS)
   # ===========================================================================
-  expressway-postgres:
-    image: postgres:15-alpine
-    container_name: telephony-expressway-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: expressway_db
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
-    volumes:
-      - expressway_postgres_data:/var/lib/postgresql/data
-      - ./postgres/expressway-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - "5440:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-    networks:
-      - telephony-network
+  # expressway-postgres:
+  #   image: postgres:15-alpine
+  #   container_name: telephony-expressway-postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: expressway_db
+  #     POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.UTF-8"
+  #   volumes:
+  #     - expressway_postgres_data:/var/lib/postgresql/data
+  #     - ./postgres/expressway-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+  #   ports:
+  #     - "5440:5432"
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
+  #   networks:
+  #     - telephony-network
+  #     - cma-global-network
 
   # ===========================================================================
   # Service 9: Superset Database
@@ -246,6 +254,7 @@ services:
       start_period: 10s
     networks:
       - telephony-network
+      - cma-global-network
 
   # ===========================================================================
   # Service 10: Redis Cache
@@ -271,6 +280,7 @@ services:
       retries: 5
     networks:
       - telephony-network
+      - cma-global-network
 
   # ===========================================================================
   # Service 11: Mock Cisco Server
@@ -294,6 +304,7 @@ services:
       start_period: 5s
     networks:
       - telephony-network
+      - cma-global-network
 
   # ===========================================================================
   # Service 12: AXLerate REST Middleware
@@ -325,6 +336,7 @@ services:
       start_period: 10s
     networks:
       - telephony-network
+      - cma-global-network
 
   # ===========================================================================
   # Service 13: Proxy Gateway
@@ -342,6 +354,9 @@ services:
       POLLING_INTERVAL: "60"
       REQUEST_TIMEOUT: "10"
       PYTHONUNBUFFERED: 1
+      
+      # Environment variable for routing logic
+      USE_REAL_CUCM: ${USE_REAL_CUCM:-false}
       
       # Multi-Database Configuration
       CUCM_PRIMARY_URL: postgresql://postgres:password@cucm-postgres:5432/cucm_db
@@ -397,6 +412,7 @@ services:
       start_period: 10s
     networks:
       - telephony-network
+      - cma-global-network
 
   # ===========================================================================
   # Service 13: Apache Superset
@@ -418,12 +434,11 @@ services:
     ports:
       - "8088:8088"
     depends_on:
-      superset-postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
       - telephony-network
+      - cma-global-network
 
   # =============================================================================
 # Named Volumes for Data Persistence

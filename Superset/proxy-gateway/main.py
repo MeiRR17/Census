@@ -32,6 +32,9 @@ from models import (
     DatabaseSession
 )
 
+# Environment variable for routing logic
+USE_REAL_CUCM = os.getenv("USE_REAL_CUCM", "false").lower() == "true"
+
 # =============================================================================
 # Logging Configuration
 # =============================================================================
@@ -270,7 +273,13 @@ def fetch_cucm_metrics() -> List[Dict[str, Any]]:
         requests.RequestException: If the API call fails.
     """
     try:
-        response = requests.get(f"{MOCK_SERVER_URL}/api/cucm/system/stats", timeout=REQUEST_TIMEOUT)
+        # Routing logic: Real AXLerate vs Mock Server
+        if USE_REAL_CUCM:
+            target_url = f"{AXLERATE_URL}/api/cucm/system/stats"
+        else:
+            target_url = f"{MOCK_SERVER_URL}/api/cucm/system/stats"
+
+        response = requests.get(target_url, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
         data = response.json()
         
