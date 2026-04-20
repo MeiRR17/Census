@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # API Gateway Service
+  # ===========================================================================
+  api-gateway:
+    image: nginx:alpine
+    container_name: cma-api-gateway
+    restart: unless-stopped
+    ports:
+      - "8001:80"  # External access port
+      - "443:443"  # HTTPS port (for production)
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro  # SSL certificates (for production)
+      - nginx_logs:/var/log/nginx
+    networks:
+      - cma-global-network  # Core services network
+      - telephony-network  # Edge services network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    environment:
+      - NGINX_HOST=api-gateway
+      - NGINX_PORT=80
+      - TZ=Asia/Jerusalem
+
+  # ===========================================================================
+  # Redis for API Gateway (Rate limiting and caching)
+  # ===========================================================================
+  gateway-redis:
+    image: redis:7-alpine
+    container_name: cma-gateway-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - gateway_redis_data:/data
+    networks:
+      - cma-global-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# =============================================================================
+# Named Volumes for Data Persistence
+# =============================================================================
+volumes:
+  nginx_logs:
+    driver: local
+  gateway_redis_data:
+    driver: local
+
+# =============================================================================
+# Docker Networks
+# =============================================================================
+networks:
+  # Core network - connects to CENSUS, AXLerate, Superset
+  cma-global-network:
+    external: true
+    
+  # Edge network - connects to telephony apps
+  telephony-network:
+    external: true
