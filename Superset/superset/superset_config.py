@@ -25,9 +25,19 @@ DB_HOST = os.getenv("DB_HOST", "postgres")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "superset_db")
 
+# CENSUS DB connection for real data integration
+CENSUS_USER = os.getenv("CENSUS_USER", "census_user")
+CENSUS_PASSWORD = os.getenv("CENSUS_PASSWORD", "census_password")
+CENSUS_HOST = os.getenv("CENSUS_HOST", "census_db")
+CENSUS_PORT = os.getenv("CENSUS_PORT", "5432")
+CENSUS_DB_NAME = os.getenv("CENSUS_DB_NAME", "census_db")
+
 # SQLAlchemy connection string for PostgreSQL
 # Format: postgresql://user:password@host:port/database
 SQLALCHEMY_DATABASE_URI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+
+# CENSUS DB connection string for real data
+CENSUS_DATABASE_URI = f"postgresql://{CENSUS_USER}:{CENSUS_PASSWORD}@{CENSUS_HOST}:{CENSUS_PORT}/{CENSUS_DB_NAME}"
 
 # Enable tracking of database query times (useful for debugging)
 SQLALCHEMY_TRACK_MODIFICATIONS = False

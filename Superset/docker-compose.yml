@@ -475,3 +475,6 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/16
+  # External network for CENSUS integration
+  cma-global-network:
+    external: true

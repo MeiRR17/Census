@@ -18,6 +18,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - cma-global-network
 
 volumes:
   postgres_data:
+
+networks:
+  cma-global-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -1,4 +1,3 @@
-# =============================================================================
 # AXLerate REST Middleware - Python Dependencies
 # =============================================================================
 
@@ -21,3 +20,10 @@ python-multipart==0.0.6
 
 # Development and logging
 python-dotenv==1.0.0
+
+# AXLerate SDK (New unified SDK)
+git+https://github.com/MeiRR17/axlerate-sdk.git@main
+
+# Optional: Production database drivers
+# psycopg2-binary==2.9.9  # For PostgreSQL
+# asyncpg==0.29.0          # For async PostgreSQL

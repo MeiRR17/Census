@@ -19,8 +19,8 @@ from pydantic import BaseModel, Field
 from requests.auth import HTTPBasicAuth
 import httpx
 
-# Import the new comprehensive Cisco UC SDK - temporarily disabled
-# SDK import will be added back once file structure is fixed
+# Import the new comprehensive Cisco UC SDK
+from axlerate.client import AXLClient, BaseCiscoClient
 
 # Disable SSL warnings for development environments
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -330,10 +330,9 @@ async def root():
 async def get_phone(phone_name: str):
     """Get phone information by name."""
     try:
-        # For demo purposes, we'll use mock credentials
-        # In production, these would come from a secure source
-        sdk = CiscoUCSDK("192.168.1.100", "admin", "password")
-        result = sdk.axl.get_phone(phone_name)
+        # Use the new AXLerate SDK
+        sdk = AXLClient("192.168.1.100", "admin", "password")
+        result = sdk.get_phone(phone_name)
         return result
     except Exception as e:
         logger.error(f"Error getting phone {phone_name}: {str(e)}")
@@ -343,8 +342,9 @@ async def get_phone(phone_name: str):
 async def add_phone(phone_data: Dict[str, Any]):
     """Add a new phone."""
     try:
-        sdk = CiscoUCSDK("192.168.1.100", "admin", "password")
-        result = sdk.axl.add_phone(phone_data)
+        # Use the new AXLerate SDK
+        sdk = AXLClient("192.168.1.100", "admin", "password")
+        result = sdk.add_phone(phone_data)
         return result
     except Exception as e:
         logger.error(f"Error adding phone: {str(e)}")
@@ -354,8 +354,9 @@ async def add_phone(phone_data: Dict[str, Any]):
 async def get_user(user_id: str):
     """Get user information by user ID."""
     try:
-        sdk = CiscoUCSDK("192.168.1.100", "admin", "password")
-        result = sdk.axl.get_user(user_id)
+        # Use the new AXLerate SDK
+        sdk = AXLClient("192.168.1.100", "admin", "password")
+        result = sdk.get_user(user_id)
         return result
     except Exception as e:
         logger.error(f"Error getting user {user_id}: {str(e)}")
@@ -368,10 +369,14 @@ async def execute_sql_query(request: Dict[str, Any]):
         sql_query = request.get("query", "")
         if not sql_query:
             return {"success": False, "error": "SQL query is required"}
-        
-        sdk = CiscoUCSDK("192.168.1.100", "admin", "password")
-        result = sdk.axl.execute_sql_query(sql_query)
-        return result
+        try:
+            # Use the new AXLerate SDK
+            sdk = AXLClient("192.168.1.100", "admin", "password")
+            result = sdk.execute_sql_query(sql_query)
+            return result
+        except Exception as e:
+            logger.error(f"Error executing SQL query: {str(e)}")
+            return {"success": False, "error": str(e)}
     except Exception as e:
         logger.error(f"Error executing SQL query: {str(e)}")
         return {"success": False, "error": str(e)}
@@ -386,10 +391,14 @@ async def get_devices_by_name(request: Dict[str, Any]):
         device_names = request.get("device_names", [])
         if not device_names:
             return {"success": False, "error": "device_names list is required"}
-        
-        sdk = CiscoUCSDK("192.168.1.100", "admin", "password")
-        result = sdk.risport.get_device_by_name(device_names)
-        return result
+        try:
+            # Use the new AXLerate SDK
+            sdk = AXLClient("192.168.1.100", "admin", "password")
+            result = sdk.get_devices_by_name(device_names)
+            return result
+        except Exception as e:
+            logger.error(f"Error getting devices: {str(e)}")
+            return {"success": False, "error": str(e)}
     except Exception as e:
         logger.error(f"Error getting devices: {str(e)}")
         return {"success": False, "error": str(e)}
@@ -401,10 +410,14 @@ async def get_devices_by_mac(request: Dict[str, Any]):
         mac_addresses = request.get("mac_addresses", [])
         if not mac_addresses:
             return {"success": False, "error": "mac_addresses list is required"}
-        
-        sdk = CiscoUCSDK("192.168.1.100", "admin", "password")
-        result = sdk.risport.get_device_by_mac(mac_addresses)
-        return result
+        try:
+            # Use the new AXLerate SDK
+            sdk = AXLClient("192.168.1.100", "admin", "password")
+            result = sdk.get_devices_by_mac(mac_addresses)
+            return result
+        except Exception as e:
+            logger.error(f"Error getting devices by MAC: {str(e)}")
+            return {"success": False, "error": str(e)}
     except Exception as e:
         logger.error(f"Error getting devices by MAC: {str(e)}")
         return {"success": False, "error": str(e)}
@@ -413,8 +426,9 @@ async def get_devices_by_mac(request: Dict[str, Any]):
 async def get_all_registered_devices():
     """Get all registered devices."""
     try:
-        sdk = CiscoUCSDK("192.168.1.100", "admin", "password")
-        result = sdk.risport.get_all_registered_devices()
+        # Use the new AXLerate SDK
+        sdk = AXLClient("192.168.1.100", "admin", "password")
+        result = sdk.get_all_registered_devices()
         return result
     except Exception as e:
         logger.error(f"Error getting registered devices: {str(e)}")
@@ -427,8 +441,9 @@ async def get_all_registered_devices():
 async def get_services_status(server_name: str):
     """Get status of all services on a server."""
     try:
-        sdk = CiscoUCSDK("192.168.1.100", "admin", "password")
-        result = sdk.control_center.get_all_services_status(server_name)
+        # Use the new AXLerate SDK
+        sdk = AXLClient("192.168.1.100", "admin", "password")
+        result = sdk.get_all_services_status(server_name)
         return result
     except Exception as e:
         logger.error(f"Error getting services status: {str(e)}")
@@ -441,17 +456,21 @@ async def control_service(server_name: str, service_name: str, request: Dict[str
         action = request.get("action", "")
         if action not in ["Start", "Stop", "Restart"]:
             return {"success": False, "error": "action must be Start, Stop, or Restart"}
-        
-        sdk = CiscoUCSDK("192.168.1.100", "admin", "password")
-        
-        if action == "Start":
-            result = sdk.control_center.start_service(server_name, service_name)
-        elif action == "Stop":
-            result = sdk.control_center.stop_service(server_name, service_name)
-        else:  # Restart
-            result = sdk.control_center.restart_service(server_name, service_name)
-        
-        return result
+        try:
+            # Use the new AXLerate SDK
+            sdk = AXLClient("192.168.1.100", "admin", "password")
+            
+            if action == "Start":
+                result = sdk.start_service(server_name, service_name)
+            elif action == "Stop":
+                result = sdk.stop_service(server_name, service_name)
+            else:  # Restart
+                result = sdk.restart_service(server_name, service_name)
+            
+            return result
+        except Exception as e:
+            logger.error(f"Error controlling service: {str(e)}")
+            return {"success": False, "error": str(e)}
     except Exception as e:
         logger.error(f"Error controlling service: {str(e)}")
         return {"success": False, "error": str(e)}
@@ -463,7 +482,8 @@ async def control_service(server_name: str, service_name: str, request: Dict[str
 async def get_sdk_info():
     """Get SDK information and connection status."""
     try:
-        sdk = CiscoUCSDK("192.168.1.100", "admin", "password")
+        # Use the new AXLerate SDK
+        sdk = AXLClient("192.168.1.100", "admin", "password")
         connection_results = sdk.test_all_connections()
         server_info = sdk.get_server_info()
         
