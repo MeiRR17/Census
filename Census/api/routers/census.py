@@ -21,6 +21,7 @@ from schemas.census import (
     SyncLogResponse, LocationResponse
 )
 from services.sync_engine import run_full_sync
+from ciscoaxl import axl
 
 
 logger = logging.getLogger(__name__)

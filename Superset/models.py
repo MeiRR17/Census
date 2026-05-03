@@ -163,28 +163,7 @@ class TelephonyMetric(Base):
         {"comment": "Unified telephony metrics with deep segmentation support"}
     )
     
-    def to_dict(self) -> dict:
-        """Convert telephony metric to dictionary."""
-        return {
-            "id": self.id,
-            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
-            "server_type": self.server_type,
-            "server_name": self.server_name,
-            "server_ip": self.server_ip,
-            "metric_name": self.metric_name,
-            "metric_value": self.metric_value,
-            "unit": self.unit,
-            "location_base": self.location_base,
-            "device_type": self.device_type,
-            "extension": self.extension,
-            "destination_network": self.destination_network,
-            "prefix": self.prefix,
-            "collection_method": self.collection_method,
-            "raw_data": self.raw_data,
-            "error_message": self.error_message,
-            "is_success": self.is_success
-        }
-
+    
 
 # =============================================================================
 # Base Metrics Model

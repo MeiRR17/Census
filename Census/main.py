@@ -3,6 +3,7 @@ CENSUS - Centralized Enterprise Network Communication Unified System
 FastAPI Application Entry Point
 """
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends, HTTPException
@@ -13,9 +14,19 @@ from sqlalchemy import text
 from core.config import get_settings, Settings
 from database.session import init_db, get_db, close_db_connections
 from api.routers.census import census_router
+from api.routers.cms import cms_router
+from api.routers.cms_meetings import cms_meetings_router
+from api.routers.cucm_mock import cucm_mock_router
 from core.scheduler import start_scheduler, stop_scheduler
 
 settings = get_settings()
+
+# Configure logging to stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
 
 
 @asynccontextmanager
@@ -64,8 +75,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include census router
+# Include routers
 app.include_router(census_router)
+# app.include_router(cms_router)  # Temporarily disabled due to connection loop
+app.include_router(cms_meetings_router)
+app.include_router(cucm_mock_router)
 
 
 @app.get("/health", tags=["Health"])

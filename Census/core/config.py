@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "census_user"
     POSTGRES_PASSWORD: str = "census_password"
     POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: int = 5432
+    POSTGRES_PORT: int = 5433
     POSTGRES_DB: str = "census_db"
     
     # Network Configuration
@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     
     # External Services
     axlerate_base_url: str = "http://axlerate:8000"
+    mock_server_url: str = "http://telephony-mock-server:8001"
     
     # Active Directory Configuration
     ad_server_url: str = "ldap://domain-controller.military.net"

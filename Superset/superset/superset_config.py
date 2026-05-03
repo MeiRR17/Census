@@ -21,7 +21,7 @@ import os
 # Get database connection from environment variables with defaults
 DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
-DB_HOST = os.getenv("DB_HOST", "postgres")
+DB_HOST = os.getenv("DB_HOST", "superset-postgres")
 DB_PORT = os.getenv("DB_PORT", "5432")
 DB_NAME = os.getenv("DB_NAME", "superset_db")
 
@@ -38,6 +38,10 @@ SQLALCHEMY_DATABASE_URI = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_P
 
 # CENSUS DB connection string for real data
 CENSUS_DATABASE_URI = f"postgresql://{CENSUS_USER}:{CENSUS_PASSWORD}@{CENSUS_HOST}:{CENSUS_PORT}/{CENSUS_DB_NAME}"
+
+# CENSUS API endpoint for REST API integration
+CENSUS_API_URL = os.getenv("CENSUS_API_URL", "http://census_app:8000")
+CENSUS_API_PREFIX = "/api/v1"
 
 # Enable tracking of database query times (useful for debugging)
 SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -243,12 +247,12 @@ Use the navigation to:
 # The telephony_db will be available as a connection option
 # This allows Superset to query the metrics data directly
 DATABASE_CONNECTION_MAPPER = {
-    "telephony_metrics": {
-        "sqlalchemy_uri": f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/telephony_db",
-        "database_name": "Telephony Metrics DB",
+    "census_db": {
+        "sqlalchemy_uri": CENSUS_DATABASE_URI,
+        "database_name": "CENSUS Database",
         "expose_in_sqllab": True,
-        "allow_ctas": True,  # Allow CREATE TABLE AS SELECT
-        "allow_cvas": True,  # Allow CREATE VIEW AS SELECT
+        "allow_ctas": True,
+        "allow_cvas": True,
     }
 }
 

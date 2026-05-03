@@ -23,6 +23,14 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Copy ciscoaxl SDK
+COPY ciscoaxl /app/ciscoaxl
+
+# Install Python dependencies including SDK
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -e /app/ciscoaxl
+
 # Copy application code
 COPY . .
 

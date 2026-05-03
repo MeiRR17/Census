@@ -10,7 +10,7 @@ python -c "
 import socket, time
 for _ in range(30):
     try:
-        with socket.create_connection(('postgres', 5432), timeout=1):
+        with socket.create_connection(('superset-postgres', 5432), timeout=1):
             break
     except OSError:
         time.sleep(2)

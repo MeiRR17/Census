@@ -16,7 +16,7 @@ from database.models import (
     User, Device, SwitchConnection, SyncLog, 
     Line, DeviceLineAssociation
 )
-from services.axlerate_client import AXLerateClient
+from services.mock_server_client import MockServerClient
 from services.phone_scraper import scan_phones_network
 from core.config import get_settings
 
@@ -89,15 +89,18 @@ class SyncEngine:
             raise
     
     async def _sync_cucm_users(self) -> Dict:
-        """Sync users from CUCM via AXLerate."""
+        """Sync users from CUCM via Mock Server."""
         try:
-            async with AXLerateClient() as axl_client:
-                users_data = await axl_client.fetch_cucm_users()
-            
+            logger.info("🔄 [SyncEngine] Starting CUCM users sync")
+            async with MockServerClient() as mock_client:
+                users_data = await mock_client.fetch_cucm_users()
+
             if not users_data:
-                logger.warning("No users returned from CUCM")
+                logger.warning("⚠️ [SyncEngine] No users returned from CUCM")
                 return {"users_synced": 0}
-            
+
+            logger.info(f"📊 [SyncEngine] Received {len(users_data)} users from mock server")
+
             # Transform CUCM data to database format
             db_users = []
             for user in users_data:
@@ -131,9 +134,8 @@ class SyncEngine:
             user_lookup = await self._create_user_lookup(users_data)
             
             return {"users_synced": len(users_data), "user_lookup": user_lookup}
-            
         except Exception as e:
-            logger.error(f"❌ Failed to sync CUCM users: {e}")
+            logger.error(f"❌ [SyncEngine] Failed to sync CUCM users: {e}")
             raise
     
     async def _create_user_lookup(self, users_data: List[Dict]) -> Dict[str, uuid.UUID]:
@@ -155,10 +157,10 @@ class SyncEngine:
             raise
     
     async def _fetch_cucm_devices(self) -> List[Dict]:
-        """Fetch devices from CUCM via AXLerate."""
+        """Fetch devices from CUCM via Mock Server."""
         try:
-            async with AXLerateClient() as axl_client:
-                devices = await axl_client.fetch_registered_endpoints()
+            async with MockServerClient() as mock_client:
+                devices = await mock_client.fetch_registered_endpoints()
             
             logger.info(f"✅ Fetched {len(devices)} devices from CUCM")
             return devices
@@ -352,6 +354,17 @@ class SyncEngine:
             logger.error(f"❌ Failed to create switch connection for {device_name}: {e}")
             raise
     
+    def _serialize_stats(self, obj):
+        """Recursively serialize objects to JSON-compatible types."""
+        if isinstance(obj, (datetime, uuid.UUID)):
+            return str(obj)
+        elif isinstance(obj, dict):
+            return {k: self._serialize_stats(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._serialize_stats(item) for item in obj]
+        else:
+            return obj
+    
     async def _log_sync_result(self, sync_type: str, status: str, 
                              stats: Dict) -> None:
         """Log synchronization result to database."""
@@ -369,7 +382,7 @@ class SyncEngine:
                 "completed_at": datetime.utcnow(),
                 "duration_seconds": (datetime.utcnow() - self.sync_start_time).total_seconds(),
                 "error_message": "; ".join(stats.get("errors", [])) if stats.get("errors") else None,
-                "details": stats
+                "details": self._serialize_stats(stats)
             }
             
             await self.db.execute(insert(SyncLog).values(sync_log))
