@@ -326,15 +326,19 @@ class CUCMMockService:
         return None
     
     async def create_phone(self, phone_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """יוצר טלפון חדש"""
+        """יוצר טלפון חדש עם כל הפרטים"""
+        mac_address = phone_data.get('mac_address', '00:00:00:00:00:00')
+        # Ensure MAC is in proper format
+        mac_clean = mac_address.replace(':', '').replace('-', '').upper()
+        
         new_phone = CUCMPhone(
-            id=f"SEP{phone_data.get('mac_address', '00:00:00:00:00:00').replace(':', '')}",
-            name=f"SEP{phone_data.get('mac_address', '00:00:00:00:00:00').replace(':', '')}",
+            id=f"SEP{mac_clean}",
+            name=f"SEP{mac_clean}",
             description=phone_data.get("description", "New Phone"),
             model=phone_data.get("model", "Cisco 7841"),
-            mac_address=phone_data.get("mac_address", "00:00:00:00:00:00"),
+            mac_address=mac_address,
             ip_address=phone_data.get("ip_address", "10.1.1.200"),
-            status="unregistered",
+            status=phone_data.get("status", "unregistered"),
             device_pool=phone_data.get("device_pool", "Default"),
             calling_search_space=phone_data.get("calling_search_space", "CSS-Internal"),
             line_dn=phone_data.get("line_dn", ""),
@@ -342,6 +346,7 @@ class CUCMMockService:
             last_registered=datetime.utcnow().isoformat() + "Z"
         )
         self.phones.append(new_phone)
+        logger.info(f"Created new phone: {new_phone.id} with MAC {mac_address}")
         return asdict(new_phone)
     
     async def delete_phone(self, phone_id: str) -> Dict[str, Any]:

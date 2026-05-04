@@ -78,14 +78,34 @@ class DeviceResponse(BaseResponse):
     @classmethod
     def from_device(cls, device):
         """Create DeviceResponse from Device model with proper field mapping."""
-        # Transform nested relationships
-        owner = UserResponse.from_attributes(device.owner) if device.owner else None
-        switch_connections = [
-            SwitchConnectionResponse.from_attributes(sc) for sc in device.switch_connections
-        ]
-        lines = [
-            LineResponse.from_line(device_line.line) for device_line in device.lines
-        ]
+        # Transform nested relationships safely
+        owner = None
+        if device.owner:
+            owner = UserResponse(
+                id=device.owner.id,
+                sam_account_name=device.owner.sam_account_name,
+                display_name=device.owner.display_name,
+                department=device.owner.department,
+                is_active=device.owner.is_active,
+                created_at=device.owner.created_at,
+                updated_at=device.owner.updated_at
+            )
+        
+        switch_connections = []
+        for sc in device.switch_connections or []:
+            switch_connections.append(
+                SwitchConnectionResponse(
+                    switch_name=sc.switch_name,
+                    switch_ip=sc.switch_ip,
+                    remote_port=sc.remote_port,
+                    vlan=sc.vlan
+                )
+            )
+        
+        lines = []
+        for device_line in device.lines or []:
+            if device_line.line:
+                lines.append(LineResponse.from_line(device_line.line))
         
         return cls(
             mac_address=device.mac_address,
@@ -126,6 +146,19 @@ class SyncLogResponse(BaseResponse):
     completed_at: Optional[datetime] = None
     duration_seconds: Optional[float] = None
     error_message: Optional[str] = None
+
+
+class CUCMPhoneCreateRequest(BaseModel):
+    """Request schema for creating a new CUCM phone with all possible fields."""
+    mac_address: str  # Required: MAC address (e.g., "00:11:22:33:44:55")
+    description: Optional[str] = "New Phone"
+    model: Optional[str] = "Cisco 7841"
+    ip_address: Optional[str] = "10.1.1.200"
+    device_pool: Optional[str] = "Default"
+    calling_search_space: Optional[str] = "CSS-Internal"
+    line_dn: Optional[str] = ""  # Directory Number
+    line_partition: Optional[str] = "PT-Internal"
+    status: Optional[str] = "unregistered"  # registered, unregistered, rejected
 
 
 class SyncTriggerResponse(BaseModel):

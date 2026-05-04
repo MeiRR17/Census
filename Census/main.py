@@ -17,6 +17,8 @@ from api.routers.census import census_router
 from api.routers.cms import cms_router
 from api.routers.cms_meetings import cms_meetings_router
 from api.routers.cucm_mock import cucm_mock_router
+from api.routers.meetingplace_mock import meetingplace_mock_router
+from api.routers.meetingplace import meetingplace_router
 from core.scheduler import start_scheduler, stop_scheduler
 
 settings = get_settings()
@@ -80,6 +82,8 @@ app.include_router(census_router)
 # app.include_router(cms_router)  # Temporarily disabled due to connection loop
 app.include_router(cms_meetings_router)
 app.include_router(cucm_mock_router)
+app.include_router(meetingplace_mock_router)
+app.include_router(meetingplace_router)
 
 
 @app.get("/health", tags=["Health"])

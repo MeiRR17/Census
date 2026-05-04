@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Dict, Optional, Any
 
 from services.cucm_mock import cucm_mock_service
+from schemas.census import CUCMPhoneCreateRequest
 
 logger = logging.getLogger(__name__)
 
@@ -74,18 +75,44 @@ async def get_phone_by_id(phone_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @cucm_mock_router.post("/phones", response_model=Dict[str, Any])
-async def create_phone(phone_data: Dict[str, Any]):
+async def create_phone(phone_data: CUCMPhoneCreateRequest):
     """
-    Create a new phone
+    Create a new phone with all possible fields.
+    
+    Required field:
+    - mac_address: MAC address (e.g., "00:11:22:33:44:55")
+    
+    Optional fields:
+    - description: Phone description (default: "New Phone")
+    - model: Phone model (default: "Cisco 7841")
+    - ip_address: IP address (default: "10.1.1.200")
+    - device_pool: Device pool name (default: "Default")
+    - calling_search_space: CSS (default: "CSS-Internal")
+    - line_dn: Directory Number (default: "")
+    - line_partition: Line partition (default: "PT-Internal")
+    - status: Phone status (default: "unregistered")
     
     Args:
-        phone_data: Phone data
+        phone_data: Phone creation data
         
     Returns:
         Created phone details
+    
+    Example:
+        {
+            "mac_address": "00:11:22:33:44:99",
+            "description": "New Office Phone",
+            "model": "Cisco 8851",
+            "ip_address": "10.1.1.150",
+            "device_pool": "Sales-Pool",
+            "calling_search_space": "CSS-Sales",
+            "line_dn": "2500",
+            "line_partition": "PT-Sales",
+            "status": "registered"
+        }
     """
     try:
-        phone = await cucm_mock_service.create_phone(phone_data)
+        phone = await cucm_mock_service.create_phone(phone_data.model_dump())
         if not phone:
             raise HTTPException(status_code=400, detail="Invalid phone data")
         return phone
