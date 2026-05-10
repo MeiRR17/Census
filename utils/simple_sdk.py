@@ -109,6 +109,185 @@ class CensusSDK:
         """Trigger data sync with external servers"""
         return self._request("POST", "/api/sync")
     
+    # =====================================================
+    # CMS Control Operations (via Census Proxy)
+    # =====================================================
+    
+    def get_cms_cospaces(self) -> List[Dict]:
+        """Get all CMS CoSpaces"""
+        return self._request("GET", "/api/cms/cospaces")
+    
+    def create_cms_cospace(self, name: str, uri: Optional[str] = None, 
+                          passcode: Optional[str] = None, **kwargs) -> Dict:
+        """Create a new CMS CoSpace through Census"""
+        data = {
+            "name": name,
+            "uri": uri,
+            "passcode": passcode,
+            **kwargs
+        }
+        return self._request("POST", "/api/cms/cospaces", data)
+    
+    def get_cms_cospace(self, cospace_id: str) -> Dict:
+        """Get specific CoSpace details"""
+        return self._request("GET", f"/api/cms/cospaces/{cospace_id}")
+    
+    def update_cospace_passcode(self, cospace_id: str, passcode: str) -> Dict:
+        """Update CoSpace passcode"""
+        return self._request("PUT", f"/api/cms/cospaces/{cospace_id}/passcode", 
+                           {"passcode": passcode})
+    
+    def delete_cms_cospace(self, cospace_id: str) -> Dict:
+        """Delete a CoSpace"""
+        return self._request("DELETE", f"/api/cms/cospaces/{cospace_id}")
+    
+    def get_cms_calls(self) -> List[Dict]:
+        """Get all CMS calls from database"""
+        return self._request("GET", "/api/cms/calls")
+    
+    def get_cms_active_calls(self) -> Dict:
+        """Get active calls from CMS in real-time"""
+        return self._request("GET", "/api/cms/calls/active")
+    
+    def get_cms_call_details(self, call_id: str) -> Dict:
+        """Get call details from CMS"""
+        return self._request("GET", f"/api/cms/calls/{call_id}")
+    
+    def get_cms_call_participants(self, call_id: str) -> Dict:
+        """Get participants for a specific call"""
+        return self._request("GET", f"/api/cms/calls/{call_id}/participants")
+    
+    def mute_cms_participant(self, call_id: str, participant_name: str) -> Dict:
+        """Mute a participant in a call"""
+        return self._request("POST", 
+                           f"/api/cms/calls/{call_id}/participants/{participant_name}/mute")
+    
+    def unmute_cms_participant(self, call_id: str, participant_name: str) -> Dict:
+        """Unmute a participant in a call"""
+        return self._request("POST", 
+                           f"/api/cms/calls/{call_id}/participants/{participant_name}/unmute")
+    
+    def kick_cms_participant(self, call_id: str, participant_name: str) -> Dict:
+        """Kick a participant from a call"""
+        return self._request("DELETE", 
+                           f"/api/cms/calls/{call_id}/participants/{participant_name}")
+    
+    def get_cms_system_status(self) -> Dict:
+        """Get CMS system status"""
+        return self._request("GET", "/api/cms/system/status")
+    
+    # =====================================================
+    # CUCM Control Operations (via Census Proxy)
+    # =====================================================
+    
+    def get_cucm_phones(self, status: Optional[str] = None, 
+                       device_pool: Optional[str] = None) -> List[Dict]:
+        """Get CUCM phones with optional filtering"""
+        params = ""
+        if status:
+            params += f"?status={status}"
+        if device_pool:
+            separator = "&" if params else "?"
+            params += f"{separator}device_pool={device_pool}"
+        return self._request("GET", f"/api/cucm/phones{params}")
+    
+    def create_cucm_phone(self, name: str, **kwargs) -> Dict:
+        """Create a new phone in CUCM through Census"""
+        data = {"name": name, **kwargs}
+        return self._request("POST", "/api/cucm/phones", data)
+    
+    def get_cucm_phone(self, phone_uuid: str) -> Dict:
+        """Get specific phone details"""
+        return self._request("GET", f"/api/cucm/phones/{phone_uuid}")
+    
+    def get_cucm_lines(self, pattern: Optional[str] = None) -> List[Dict]:
+        """Get CUCM lines with optional filtering"""
+        params = f"?pattern={pattern}" if pattern else ""
+        return self._request("GET", f"/api/cucm/lines{params}")
+    
+    def create_cucm_line(self, pattern: str, **kwargs) -> Dict:
+        """Create a new line in CUCM through Census"""
+        data = {"pattern": pattern, **kwargs}
+        return self._request("POST", "/api/cucm/lines", data)
+    
+    def get_cucm_line(self, line_uuid: str) -> Dict:
+        """Get specific line details"""
+        return self._request("GET", f"/api/cucm/lines/{line_uuid}")
+    
+    def get_cucm_users(self, department: Optional[str] = None) -> List[Dict]:
+        """Get CUCM users with optional filtering"""
+        params = f"?department={department}" if department else ""
+        return self._request("GET", f"/api/cucm/users{params}")
+    
+    def create_cucm_user(self, user_id: str, **kwargs) -> Dict:
+        """Create a new user in CUCM through Census"""
+        data = {"user_id": user_id, **kwargs}
+        return self._request("POST", "/api/cucm/users", data)
+    
+    def get_cucm_user(self, user_id: str) -> Dict:
+        """Get specific user details"""
+        return self._request("GET", f"/api/cucm/users/{user_id}")
+    
+    def get_cucm_system_status(self) -> Dict:
+        """Get CUCM system status"""
+        return self._request("GET", "/api/cucm/system/status")
+    
+    # =====================================================
+    # UCCX Control Operations (via Census Proxy)
+    # =====================================================
+    
+    def get_uccx_agents(self) -> Dict:
+        """Get all UCCX agents"""
+        return self._request("GET", "/api/uccx/agents")
+    
+    def create_uccx_agent(self, agent_id: str, first_name: str, last_name: str, 
+                         extension: str, **kwargs) -> Dict:
+        """Create a new UCCX agent through Census"""
+        data = {
+            "agent_id": agent_id,
+            "first_name": first_name,
+            "last_name": last_name,
+            "extension": extension,
+            **kwargs
+        }
+        return self._request("POST", "/api/uccx/agents", data)
+    
+    def update_uccx_agent(self, agent_id: str, **kwargs) -> Dict:
+        """Update an existing UCCX agent"""
+        return self._request("PUT", f"/api/uccx/agents/{agent_id}", kwargs)
+    
+    def delete_uccx_agent(self, agent_id: str) -> Dict:
+        """Delete a UCCX agent"""
+        return self._request("DELETE", f"/api/uccx/agents/{agent_id}")
+    
+    def get_uccx_teams(self) -> Dict:
+        """Get all UCCX teams"""
+        return self._request("GET", "/api/uccx/teams")
+    
+    def get_uccx_queues(self) -> Dict:
+        """Get all UCCX queues (CSQs)"""
+        return self._request("GET", "/api/uccx/queues")
+    
+    def get_uccx_system_status(self) -> Dict:
+        """Get UCCX system status"""
+        return self._request("GET", "/api/uccx/system/status")
+    
+    # =====================================================
+    # Unified Operations
+    # =====================================================
+    
+    def get_all_meetings(self) -> Dict:
+        """Get all meetings from all systems"""
+        return self._request("GET", "/api/unified/meetings")
+    
+    def get_all_devices(self) -> Dict:
+        """Get all devices from all systems"""
+        return self._request("GET", "/api/unified/devices")
+    
+    def get_all_users(self) -> Dict:
+        """Get all users from all systems"""
+        return self._request("GET", "/api/unified/users")
+    
     # Convenience methods for common operations
     def get_cucm_devices(self) -> List[Dict]:
         """Get all CUCM devices"""
@@ -149,36 +328,166 @@ class CensusSDK:
         return self.create_meeting(meeting_data)
 
 
-# Example usage
+# Example usage - Comprehensive CMS/CUCM Control
 if __name__ == "__main__":
     # Initialize SDK
     sdk = CensusSDK("http://localhost:8000")
     
     try:
+        print("=" * 60)
+        print("COMPREHENSIVE CENSUS SDK DEMO")
+        print("=" * 60)
+        
         # Check health
+        print("\n1. Health Check:")
         health = sdk.health_check()
-        print("Health:", health)
+        print(f"   Status: {health.get('status')}")
+        print(f"   Database: {health.get('database')}")
+        print(f"   Sync: {health.get('sync')}")
+        
+        # =====================================================
+        # CMS OPERATIONS
+        # =====================================================
+        print("\n" + "=" * 60)
+        print("CMS OPERATIONS")
+        print("=" * 60)
+        
+        # Create a CoSpace
+        print("\n2. Creating CMS CoSpace:")
+        cospace = sdk.create_cms_cospace(
+            name="Team Standup",
+            uri="team-standup",
+            passcode="123456",
+            max_participants=25
+        )
+        print(f"   Created: {cospace.get('cospace', {}).get('name')}")
+        
+        # List all CoSpaces
+        print("\n3. Listing CMS CoSpaces:")
+        cospaces = sdk.get_cms_cospaces()
+        print(f"   Found {len(cospaces)} CoSpaces")
+        for cs in cospaces[:3]:  # Show first 3
+            print(f"   - {cs.get('name')} ({cs.get('cospace_id')})")
+        
+        # Get active calls
+        print("\n4. Getting Active Calls:")
+        active_calls = sdk.get_cms_active_calls()
+        calls = active_calls.get('active_calls', [])
+        print(f"   Active calls: {len(calls)}")
+        
+        # If there are calls, control participants
+        if calls:
+            call_id = calls[0].get('callId', calls[0].get('id'))
+            print(f"\n5. Controlling Call {call_id}:")
+            
+            # Get participants
+            participants_data = sdk.get_cms_call_participants(call_id)
+            participants = participants_data.get('participants', [])
+            print(f"   Participants: {len(participants)}")
+            
+            if participants:
+                participant_name = participants[0].get('name')
+                print(f"\n   Muting participant: {participant_name}")
+                result = sdk.mute_cms_participant(call_id, participant_name)
+                print(f"   Result: {result.get('success')}")
+        
+        # Check CMS system status
+        print("\n6. CMS System Status:")
+        cms_status = sdk.get_cms_system_status()
+        print(f"   Connected: {cms_status.get('connected')}")
+        print(f"   Base URL: {cms_status.get('base_url')}")
+        
+        # =====================================================
+        # CUCM OPERATIONS
+        # =====================================================
+        print("\n" + "=" * 60)
+        print("CUCM OPERATIONS")
+        print("=" * 60)
+        
+        # Create a phone
+        print("\n7. Creating CUCM Phone:")
+        phone = sdk.create_cucm_phone(
+            name="SEP001122334455",
+            description="John's Phone",
+            model="Cisco 8841",
+            device_pool="Default",
+            protocol="SIP"
+        )
+        print(f"   Created: {phone.get('phone', {}).get('name')}")
+        
+        # List phones
+        print("\n8. Listing CUCM Phones:")
+        phones = sdk.get_cucm_phones(status="registered")
+        print(f"   Found {len(phones)} registered phones")
+        for p in phones[:3]:
+            print(f"   - {p.get('name')} ({p.get('model')})")
+        
+        # Create a line
+        print("\n9. Creating CUCM Line:")
+        line = sdk.create_cucm_line(
+            pattern="1234",
+            description="Main Line",
+            route_partition="Internal"
+        )
+        print(f"   Created: {line.get('line', {}).get('pattern')}")
+        
+        # List lines
+        print("\n10. Listing CUCM Lines:")
+        lines = sdk.get_cucm_lines(pattern="123")
+        print(f"   Found {len(lines)} lines matching '123'")
+        
+        # Create a user
+        print("\n11. Creating CUCM User:")
+        user = sdk.create_cucm_user(
+            user_id="john.doe",
+            first_name="John",
+            last_name="Doe",
+            telephone_number="1234",
+            department="Engineering"
+        )
+        print(f"   Created: {user.get('user', {}).get('display_name')}")
+        
+        # List users
+        print("\n12. Listing CUCM Users:")
+        users = sdk.get_cucm_users(department="Engineering")
+        print(f"   Found {len(users)} users in Engineering")
+        
+        # Check CUCM system status
+        print("\n13. CUCM System Status:")
+        cucm_status = sdk.get_cucm_system_status()
+        print(f"   Connected: {cucm_status.get('connected')}")
+        
+        # =====================================================
+        # UNIFIED OPERATIONS
+        # =====================================================
+        print("\n" + "=" * 60)
+        print("UNIFIED OPERATIONS")
+        print("=" * 60)
+        
+        # Get all meetings
+        print("\n14. All Meetings (Unified):")
+        all_meetings = sdk.get_all_meetings()
+        print(f"   CMS CoSpaces: {len(all_meetings.get('cms_cospaces', []))}")
+        print(f"   Active Calls: {len(all_meetings.get('cms_active_calls', []))}")
+        print(f"   Total: {all_meetings.get('total_meetings')}")
         
         # Get all devices
-        devices = sdk.get_devices()
-        print(f"Found {len(devices)} devices")
+        print("\n15. All Devices (Unified):")
+        all_devices = sdk.get_all_devices()
+        print(f"   CUCM Phones: {len(all_devices.get('cucm_phones', []))}")
+        print(f"   Total: {all_devices.get('total_devices')}")
         
-        # Register a new phone
-        phone = sdk.register_phone(
-            name="SEP001122334455",
-            ip_address="192.168.1.100",
-            mac_address="00:11:22:33:44:55",
-            model="Cisco 8841"
-        )
-        print("Registered phone:", phone)
+        # Get all users
+        print("\n16. All Users (Unified):")
+        all_users = sdk.get_all_users()
+        print(f"   CUCM Users: {len(all_users.get('cucm_users', []))}")
+        print(f"   Total: {all_users.get('total_users')}")
         
-        # Create a meeting
-        meeting = sdk.create_meeting_room(
-            meeting_id="CONF001",
-            name="Test Conference",
-            passcode="123456"
-        )
-        print("Created meeting:", meeting)
+        print("\n" + "=" * 60)
+        print("DEMO COMPLETED SUCCESSFULLY!")
+        print("=" * 60)
         
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()

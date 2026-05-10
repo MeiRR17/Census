@@ -1,8 +1,10 @@
 """
 Census CMS Client - Simple REST API Client for Edge Apps
+Supports both REST/JSON and XML formats
 """
 import requests
 import logging
+import xml.etree.ElementTree as ET
 from typing import Dict, Any, List, Optional
 from .base_client import BaseClient
 import os
@@ -10,7 +12,7 @@ import os
 logger = logging.getLogger(__name__)
 
 class CMSClient(BaseClient):
-    """Simple CMS REST Client for Edge Apps"""
+    """Complete CMS REST Client supporting JSON and XML"""
     
     def __init__(self, base_url: str = None, username: str = None, password: str = None):
         # Support both direct parameters and environment variables
@@ -209,3 +211,78 @@ class CMSClient(BaseClient):
             "verify_ssl": self.verify_ssl,
             "connected": self.test_connection()
         }
+    
+    # =====================================================
+    # XML Methods (from services/cms_service.py)
+    # =====================================================
+    
+    def update_cospace_passcode(self, cospace_id: str, passcode: str) -> Dict[str, Any]:
+        """Update CoSpace passcode using XML"""
+        xml_data = f'''<?xml version="1.0" encoding="UTF-8"?>
+        <coSpace>
+            <passcode>{passcode}</passcode>
+        </coSpace>'''
+        
+        response = self.cms_put(f'coSpaces/{cospace_id}', json_data={'passcode': passcode})
+        if response.status_code == 200:
+            try:
+                return self._parse_xml_response(response.text)
+            except:
+                return {'success': True}
+        else:
+            logger.error(f"Failed to update CoSpace passcode: {response.status_code}")
+            return {}
+    
+    def list_cospaces(self) -> List[Dict[str, Any]]:
+        """List all CoSpaces with XML parsing"""
+        response = self.cms_get('coSpaces')
+        if response.status_code == 200:
+            try:
+                root = ET.fromstring(response.text)
+                cospaces = []
+                for cospace in root.findall('coSpace'):
+                    cospaces.append(self._xml_element_to_dict(cospace))
+                return cospaces
+            except:
+                # Fallback to JSON
+                return response.json().get('coSpace', [])
+        else:
+            logger.error(f"Failed to list CoSpaces: {response.status_code}")
+            return []
+    
+    # Utility Methods
+    def _parse_xml_response(self, xml_text: str) -> Dict:
+        """Parse XML response to dictionary"""
+        try:
+            root = ET.fromstring(xml_text)
+            return self._xml_element_to_dict(root)
+        except ET.ParseError as e:
+            logger.error(f"Failed to parse XML response: {e}")
+            raise Exception(f"Invalid XML response: {e}")
+    
+    def _xml_element_to_dict(self, element: ET.Element) -> Dict:
+        """Convert XML element to dictionary"""
+        result = {}
+        
+        # Add attributes
+        if element.attrib:
+            result.update(element.attrib)
+        
+        # Add text content
+        if element.text and element.text.strip():
+            if len(element) == 0:
+                return element.text.strip()
+            else:
+                result['text'] = element.text.strip()
+        
+        # Add child elements
+        for child in element:
+            child_data = self._xml_element_to_dict(child)
+            if child.tag in result:
+                if not isinstance(result[child.tag], list):
+                    result[child.tag] = [result[child.tag]]
+                result[child.tag].append(child_data)
+            else:
+                result[child.tag] = child_data
+        
+        return result

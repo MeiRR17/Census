@@ -15,6 +15,7 @@ from contextlib import contextmanager
 # Import our organized modules
 from sync import SyncManager, SyncMiddleware
 from clients import *
+from api_routers import cms_router, cucm_router, uccx_router, meetingplace_router, unified_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -122,6 +123,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include API routers
+app.include_router(cms_router)
+app.include_router(cucm_router)
+app.include_router(uccx_router)
+app.include_router(meetingplace_router)
+app.include_router(unified_router)
+
 # Initialize sync components
 sync_manager = None
 sync_middleware = None
@@ -139,60 +147,82 @@ def init_sync_components():
 
 # Database initialization
 def init_db():
-    """Initialize database schema"""
+    """Initialize comprehensive database schemas for CUCM and CMS"""
     with engine.connect() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS devices (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                ip_address INET,
-                mac_address VARCHAR(17),
-                device_type VARCHAR(100),
-                status VARCHAR(50) DEFAULT 'unknown',
-                source VARCHAR(50) NOT NULL,
-                raw_data JSONB,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(name, source)
-            );
-            
-            CREATE TABLE IF NOT EXISTS meetings (
-                id SERIAL PRIMARY KEY,
-                meeting_id VARCHAR(255) NOT NULL,
-                source VARCHAR(50) NOT NULL,
-                name VARCHAR(255) NOT NULL,
-                uri VARCHAR(255),
-                passcode VARCHAR(100),
-                status VARCHAR(50) DEFAULT 'active',
-                participants INTEGER DEFAULT 0,
-                raw_data JSONB,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(meeting_id, source)
-            );
-            
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                user_id VARCHAR(255) NOT NULL,
-                source VARCHAR(50) NOT NULL,
-                name VARCHAR(255) NOT NULL,
-                email VARCHAR(255),
-                department VARCHAR(100),
-                phone VARCHAR(50),
-                raw_data JSONB,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(user_id, source)
-            );
-            
-            CREATE INDEX IF NOT EXISTS idx_devices_source ON devices(source);
-            CREATE INDEX IF NOT EXISTS idx_meetings_source ON meetings(source);
-            CREATE INDEX IF NOT EXISTS idx_users_source ON users(source);
-            CREATE INDEX IF NOT EXISTS idx_devices_name ON devices(name);
-            CREATE INDEX IF NOT EXISTS idx_meetings_id ON meetings(meeting_id);
-            CREATE INDEX IF NOT EXISTS idx_users_userid ON users(user_id);
-        """))
-        conn.commit()
+        # Execute the comprehensive schema SQL file
+        schema_path = os.path.join(os.path.dirname(__file__), 'database_schemas.sql')
+        if os.path.exists(schema_path):
+            with open(schema_path, 'r') as f:
+                conn.execute(text(f.read()))
+            logger.info("Loaded comprehensive database schemas from database_schemas.sql")
+        else:
+            # Fallback: Create basic tables if schema file not found
+            conn.execute(text("""
+                -- CUCM Tables
+                CREATE TABLE IF NOT EXISTS cucm_phones (
+                    id SERIAL PRIMARY KEY,
+                    uuid UUID UNIQUE NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    product_name VARCHAR(100),
+                    model VARCHAR(100),
+                    protocol VARCHAR(50) DEFAULT 'SIP',
+                    ip_address INET,
+                    mac_address VARCHAR(17),
+                    device_pool VARCHAR(100),
+                    calling_search_space VARCHAR(100),
+                    location VARCHAR(100),
+                    status VARCHAR(50) DEFAULT 'registered',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    raw_data JSONB
+                );
+                
+                -- CMS Tables
+                CREATE TABLE IF NOT EXISTS cms_cospaces (
+                    id SERIAL PRIMARY KEY,
+                    cospace_id VARCHAR(255) UNIQUE NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    uri VARCHAR(255),
+                    description TEXT,
+                    passcode VARCHAR(100),
+                    auto_attendant BOOLEAN DEFAULT FALSE,
+                    owner_id VARCHAR(255),
+                    owner_name VARCHAR(255),
+                    access_level VARCHAR(50) DEFAULT 'PUBLIC',
+                    max_participants INTEGER DEFAULT 50,
+                    status VARCHAR(50) DEFAULT 'active',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    raw_data JSONB
+                );
+                
+                CREATE TABLE IF NOT EXISTS cms_calls (
+                    id SERIAL PRIMARY KEY,
+                    call_id VARCHAR(255) UNIQUE NOT NULL,
+                    cospace_id VARCHAR(255) REFERENCES cms_cospaces(cospace_id),
+                    cospace_name VARCHAR(255),
+                    call_state VARCHAR(50) DEFAULT 'ACTIVE',
+                    start_time TIMESTAMP,
+                    end_time TIMESTAMP,
+                    duration INTEGER DEFAULT 0,
+                    host_user_id VARCHAR(255),
+                    host_user_name VARCHAR(255),
+                    current_participants INTEGER DEFAULT 0,
+                    max_participants INTEGER DEFAULT 50,
+                    status VARCHAR(50) DEFAULT 'active',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    raw_data JSONB
+                );
+                
+                -- Basic indexes
+                CREATE INDEX IF NOT EXISTS idx_cucm_phones_uuid ON cucm_phones(uuid);
+                CREATE INDEX IF NOT EXISTS idx_cucm_phones_name ON cucm_phones(name);
+                CREATE INDEX IF NOT EXISTS idx_cms_cospaces_cospace_id ON cms_cospaces(cospace_id);
+                CREATE INDEX IF NOT EXISTS idx_cms_calls_call_id ON cms_calls(call_id);
+            """))
+            logger.info("Created basic fallback database schemas")
 
 @app.on_event("startup")
 async def startup_event():
@@ -509,6 +539,122 @@ async def middleware_create(entity_type: str, entity_data: Dict[str, Any],
     except Exception as e:
         logger.error(f"Middleware create failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# CUCM-specific endpoints
+@app.get("/api/cucm/phones")
+async def get_cucm_phones(status: Optional[str] = None, device_pool: Optional[str] = None, 
+                         db: Session = Depends(get_db)):
+    """Get CUCM phones with filtering"""
+    query = "SELECT * FROM cucm_phones WHERE 1=1"
+    params = {}
+    if status:
+        query += " AND status = :status"
+        params["status"] = status
+    if device_pool:
+        query += " AND device_pool = :device_pool"
+        params["device_pool"] = device_pool
+    
+    result = db.execute(text(query), params)
+    phones = [dict(row._mapping) for row in result]
+    return phones
+
+@app.get("/api/cucm/phones/{phone_uuid}")
+async def get_cucm_phone(phone_uuid: str, db: Session = Depends(get_db)):
+    """Get specific CUCM phone by UUID"""
+    result = db.execute(
+        text("SELECT * FROM cucm_phones WHERE uuid = :uuid"),
+        {"uuid": phone_uuid}
+    )
+    phone = result.fetchone()
+    if not phone:
+        raise HTTPException(status_code=404, detail="Phone not found")
+    return dict(phone._mapping)
+
+@app.get("/api/cucm/lines")
+async def get_cucm_lines(pattern: Optional[str] = None, db: Session = Depends(get_db)):
+    """Get CUCM lines"""
+    query = "SELECT * FROM cucm_lines WHERE 1=1"
+    params = {}
+    if pattern:
+        query += " AND pattern LIKE :pattern"
+        params["pattern"] = f"%{pattern}%"
+    
+    result = db.execute(text(query), params)
+    lines = [dict(row._mapping) for row in result]
+    return lines
+
+@app.get("/api/cucm/users")
+async def get_cucm_users(department: Optional[str] = None, db: Session = Depends(get_db)):
+    """Get CUCM users"""
+    query = "SELECT * FROM cucm_users WHERE 1=1"
+    params = {}
+    if department:
+        query += " AND department = :department"
+        params["department"] = department
+    
+    result = db.execute(text(query), params)
+    users = [dict(row._mapping) for row in result]
+    return users
+
+# CMS-specific endpoints
+@app.get("/api/cms/cospaces")
+async def get_cms_cospaces(access_level: Optional[str] = None, db: Session = Depends(get_db)):
+    """Get CMS CoSpaces"""
+    query = "SELECT * FROM cms_cospaces WHERE 1=1"
+    params = {}
+    if access_level:
+        query += " AND access_level = :access_level"
+        params["access_level"] = access_level
+    
+    result = db.execute(text(query), params)
+    cospaces = [dict(row._mapping) for row in result]
+    return cospaces
+
+@app.get("/api/cms/cospaces/{cospace_id}")
+async def get_cms_cospace(cospace_id: str, db: Session = Depends(get_db)):
+    """Get specific CMS CoSpace"""
+    result = db.execute(
+        text("SELECT * FROM cms_cospaces WHERE cospace_id = :cospace_id"),
+        {"cospace_id": cospace_id}
+    )
+    cospace = result.fetchone()
+    if not cospace:
+        raise HTTPException(status_code=404, detail="CoSpace not found")
+    return dict(cospace._mapping)
+
+@app.get("/api/cms/calls")
+async def get_cms_calls(call_state: Optional[str] = None, db: Session = Depends(get_db)):
+    """Get CMS calls"""
+    query = "SELECT * FROM cms_calls WHERE 1=1"
+    params = {}
+    if call_state:
+        query += " AND call_state = :call_state"
+        params["call_state"] = call_state
+    
+    result = db.execute(text(query), params)
+    calls = [dict(row._mapping) for row in result]
+    return calls
+
+@app.get("/api/cms/calls/{call_id}/participants")
+async def get_cms_call_participants(call_id: str, db: Session = Depends(get_db)):
+    """Get participants for a specific CMS call"""
+    result = db.execute(
+        text("SELECT * FROM cms_call_participants WHERE call_id = :call_id"),
+        {"call_id": call_id}
+    )
+    participants = [dict(row._mapping) for row in result]
+    return participants
+
+# Database schema info
+@app.get("/api/schema")
+async def get_schema_info():
+    """Get database schema information"""
+    return {
+        "cucm_tables": ["cucm_phones", "cucm_lines", "cucm_users"],
+        "cms_tables": ["cms_cospaces", "cms_calls", "cms_call_participants"],
+        "legacy_tables": ["devices", "meetings", "users"],
+        "schema_file": "database_schemas.sql"
+    }
 
 if __name__ == "__main__":
     import uvicorn
