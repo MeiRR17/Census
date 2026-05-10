@@ -1,189 +1,181 @@
 """
-MeetingPlace Client - Cisco MeetingPlace
-SOAP API client for meeting scheduling
+Census MeetingPlace Client - MeetingPlace SOAP API Client
 """
-from typing import Dict, Any, List, Optional
-from .base_client import BaseClient
-from zeep import Client, Settings
-from zeep.transports import Transport
 import requests
 import logging
+from typing import Dict, Any, List, Optional
+from .base_client import BaseClient
 
 logger = logging.getLogger(__name__)
 
 class MeetingPlaceClient(BaseClient):
-    """Client for Cisco MeetingPlace SOAP API"""
+    """MeetingPlace SOAP API Client"""
     
-    def __init__(self, host: str, username: str, password: str, **kwargs):
-        """
-        Initialize MeetingPlace client
+    def __init__(self, host: str = None, username: str = None, password: str = None):
+        # Support both direct parameters and environment variables
+        host = host or os.getenv('MEETINGPLACE_HOST', 'localhost')
+        port = os.getenv('MEETINGPLACE_PORT', '8080')
+        self.base_url = f"https://{host}:{port}/MeetingPlace/ws/services/"
+        self.username = username or os.getenv('MEETINGPLACE_USERNAME', 'admin')
+        self.password = password or os.getenv('MEETINGPLACE_PASSWORD', 'admin')
         
-        Args:
-            host: MeetingPlace server hostname/IP
-            username: API username
-            password: API password
-        """
-        super().__init__(host, username, password, **kwargs)
-        self.wsdl_url = f"https://{host}/MeetingPlace/services/MeetingService?wsdl"
-        self.service = None
-        self._authenticated = False
+        self.session = requests.Session()
+        self.session.auth = (self.username, self.password)
+        self.session.headers.update({
+            'Content-Type': 'text/xml',
+            'SOAPAction': '""'
+        })
     
-    def authenticate(self) -> bool:
-        """Initialize MeetingPlace service connection"""
+    def _make_soap_request(self, service: str, action: str, params: Dict[str, Any] = None) -> Dict[str, Any]:
+        """Make SOAP request to MeetingPlace"""
         try:
-            # Create session with SSL verification disabled
-            session = requests.Session()
-            session.verify = self.verify_ssl
-            session.auth = (self.username, self.password)
+            soap_envelope = self._build_soap_envelope(action, params)
+            url = f"{self.base_url}{service}"
             
-            # Configure Zeep settings
-            settings = Settings(
-                strict=False,
-                xml_huge_tree=True,
-                force_https=(self.host.startswith("https://"))
-            )
+            response = self.session.post(url, data=soap_envelope)
+            response.raise_for_status()
             
-            # Create transport with session
-            transport = Transport(
-                session=session,
-                operation_timeout=self.timeout,
-                timeout=self.timeout
-            )
-            
-            # Create Zeep client
-            self.service = Client(
-                wsdl=self.wsdl_url,
-                transport=transport,
-                settings=settings
-            )
-            
-            # Test connection by getting schedule params
-            self.service.getScheduleParamsForm(schedulerUserId=1)
-            
-            self._authenticated = True
-            logger.info(f"Successfully authenticated with MeetingPlace: {self.host}")
-            return True
-            
+            return self._parse_soap_response(response.text)
         except Exception as e:
-            logger.error(f"Failed to authenticate with MeetingPlace: {e}")
-            return False
+            logger.error(f"SOAP request failed: {e}")
+            return {}
     
-    def test_connection(self) -> bool:
-        """Test connection to MeetingPlace"""
-        if not self._authenticated:
-            return self.authenticate()
+    def _build_soap_envelope(self, action: str, params: Dict[str, Any] = None) -> str:
+        """Build SOAP envelope"""
+        params_xml = ""
+        if params:
+            for key, value in params.items():
+                params_xml += f"<{key}>{value}</{key}>"
         
-        try:
-            self.service.getScheduleParamsForm(schedulerUserId=1)
-            return True
-        except Exception as e:
-            logger.error(f"MeetingPlace connection test failed: {e}")
-            self._authenticated = False
-            return False
+        return f"""<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" 
+                  xmlns:meet="http://www.cisco.com/meetingplace">
+    <soapenv:Header/>
+    <soapenv:Body>
+        <meet:{action}>
+            {params_xml}
+        </meet:{action}>
+    </soapenv:Body>
+</soapenv:Envelope>"""
     
-    def get_status(self) -> Dict[str, Any]:
-        """Get MeetingPlace status information"""
+    def _parse_soap_response(self, response_text: str) -> Dict[str, Any]:
+        """Parse SOAP response"""
+        # Simplified SOAP parsing - in production, use proper XML parsing
         try:
-            # Basic status check
-            is_connected = self.test_connection()
+            import xml.etree.ElementTree as ET
+            root = ET.fromstring(response_text)
             
-            return {
-                "status": "connected" if is_connected else "disconnected",
-                "host": self.host,
-                "service": "MeetingPlace"
-            }
+            # Extract data from SOAP response
+            result = {}
+            for child in root.iter():
+                if child.text and child.tag not in ['soapenv:Envelope', 'soapenv:Body']:
+                    result[child.tag] = child.text
             
+            return result
         except Exception as e:
-            logger.error(f"Failed to get MeetingPlace status: {e}")
-            return {
-                "status": "error",
-                "host": self.host,
-                "error": str(e)
-            }
+            logger.error(f"Failed to parse SOAP response: {e}")
+            return {}
     
     def get_meetings(self) -> List[Dict[str, Any]]:
-        """Get all meetings from MeetingPlace"""
+        """Get all meetings"""
         try:
-            if not self._authenticated:
-                self.authenticate()
-            
-            # This would need to be implemented based on actual MeetingPlace API
-            # For now, return empty list as placeholder
-            logger.warning("MeetingPlace get_meetings not fully implemented")
+            response = self._make_soap_request("MeetingService", "getMeetings")
+            return response.get('meetings', [])
+        except Exception as e:
+            logger.error(f"Failed to get meetings: {e}")
             return []
-            
-        except Exception as e:
-            logger.error(f"Failed to get meetings from MeetingPlace: {e}")
-            raise
     
-    def create_meeting(self, meeting_data: Dict[str, Any]) -> bool:
-        """Create a new meeting in MeetingPlace"""
+    def create_meeting(self, title: str, start_time: str, duration: int, 
+                      participants: List[str] = None) -> Dict[str, Any]:
+        """Create a new meeting"""
         try:
-            if not self._authenticated:
-                self.authenticate()
-            
-            # Build recurring meeting parameters
-            schedule_params = {
-                "dialableMtgId": meeting_data["meeting_id"],
-                "durationMin": meeting_data.get("duration", 60),
-                "entryAnnouncement": "BEEP",
-                "exitAnnouncement": "BEEP",
-                "meetingTemplateName": "Meeting Center",
-                "meetingType": "REGULAR",
-                "initialPartNum": 0,
-                "schedulerUniqueId": 0,
-                "whoCanAttend": "ANYONE",
-                "outdialOnFirstCaller": True,
-                "schedulerUserId": 1,
-                "recurrenceType": "RT_CONTINUOUS",
-                "videoEnabled": True
+            params = {
+                'title': title,
+                'startTime': start_time,
+                'duration': str(duration),
+                'participants': ','.join(participants or [])
             }
-            
-            # Create invitee
-            invitee = {
-                "email": f"{meeting_data['meeting_id']}@example.com",
-                "inviteGuest": False,
-                "speakerAbility": "SPEAKERPLUS",
-                "status": "TOBEADDED",
-                "username": meeting_data["meeting_id"]
-            }
-            
-            # This would need to be implemented based on actual MeetingPlace API
-            # For now, return True as placeholder
-            logger.warning("MeetingPlace create_meeting not fully implemented")
-            logger.info(f"Created meeting {meeting_data['meeting_id']} in MeetingPlace")
-            return True
-            
+            return self._make_soap_request("MeetingService", "createMeeting", params)
         except Exception as e:
-            logger.error(f"Failed to create meeting in MeetingPlace: {e}")
-            return False
+            logger.error(f"Failed to create meeting: {e}")
+            return {}
     
-    def update_meeting(self, meeting_id: str, meeting_data: Dict[str, Any]) -> bool:
-        """Update an existing meeting in MeetingPlace"""
+    def get_users(self) -> List[Dict[str, Any]]:
+        """Get all users"""
         try:
-            if not self._authenticated:
-                self.authenticate()
-            
-            # This would need to be implemented based on actual MeetingPlace API
-            logger.warning("MeetingPlace update_meeting not fully implemented")
-            logger.info(f"Updated meeting {meeting_id} in MeetingPlace")
-            return True
-            
+            response = self._make_soap_request("UserService", "getUsers")
+            return response.get('users', [])
         except Exception as e:
-            logger.error(f"Failed to update meeting in MeetingPlace: {e}")
-            return False
+            logger.error(f"Failed to get users: {e}")
+            return []
     
-    def delete_meeting(self, meeting_id: str) -> bool:
-        """Delete a meeting from MeetingPlace"""
+    def get_user_profile(self, user_id: str) -> Dict[str, Any]:
+        """Get user profile"""
         try:
-            if not self._authenticated:
-                self.authenticate()
-            
-            # This would need to be implemented based on actual MeetingPlace API
-            logger.warning("MeetingPlace delete_meeting not fully implemented")
-            logger.info(f"Deleted meeting {meeting_id} from MeetingPlace")
-            return True
-            
+            params = {'userId': user_id}
+            return self._make_soap_request("UserService", "getUserProfile", params)
         except Exception as e:
-            logger.error(f"Failed to delete meeting in MeetingPlace: {e}")
-            return False
+            logger.error(f"Failed to get user profile: {e}")
+            return {}
+    
+    def sync_devices(self) -> List[Dict[str, Any]]:
+        """Sync MeetingPlace devices"""
+        devices = []
+        try:
+            # MeetingPlace doesn't have traditional devices, but we can sync meeting rooms
+            meetings = self.get_meetings()
+            for meeting in meetings:
+                device = {
+                    'name': meeting.get('title', ''),
+                    'ip_address': None,
+                    'mac_address': None,
+                    'device_type': 'meeting_room',
+                    'status': meeting.get('status', 'scheduled'),
+                    'source': 'meetingplace',
+                    'raw_data': meeting
+                }
+                devices.append(device)
+        except Exception as e:
+            logger.error(f"Failed to sync MeetingPlace devices: {e}")
+        return devices
+    
+    def sync_meetings(self) -> List[Dict[str, Any]]:
+        """Sync MeetingPlace meetings"""
+        meetings = []
+        try:
+            meeting_list = self.get_meetings()
+            for meeting in meeting_list:
+                synced_meeting = {
+                    'meeting_id': meeting.get('meetingId', ''),
+                    'name': meeting.get('title', ''),
+                    'uri': meeting.get('meetingUri', ''),
+                    'passcode': meeting.get('passcode', ''),
+                    'status': meeting.get('status', 'scheduled'),
+                    'participants': len(meeting.get('participants', [])),
+                    'source': 'meetingplace',
+                    'raw_data': meeting
+                }
+                meetings.append(synced_meeting)
+        except Exception as e:
+            logger.error(f"Failed to sync MeetingPlace meetings: {e}")
+        return meetings
+    
+    def sync_users(self) -> List[Dict[str, Any]]:
+        """Sync MeetingPlace users"""
+        users = []
+        try:
+            user_list = self.get_users()
+            for user in user_list:
+                synced_user = {
+                    'user_id': user.get('userId', ''),
+                    'name': user.get('displayName', ''),
+                    'email': user.get('email', ''),
+                    'department': user.get('department', ''),
+                    'phone': user.get('phone', ''),
+                    'source': 'meetingplace',
+                    'raw_data': user
+                }
+                users.append(synced_user)
+        except Exception as e:
+            logger.error(f"Failed to sync MeetingPlace users: {e}")
+        return users

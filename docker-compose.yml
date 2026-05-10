@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  census:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://census_user:census_password@postgres:5432/census_db
+      - CUCM_HOST=${CUCM_HOST}
+      - CUCM_USERNAME=${CUCM_USERNAME}
+      - CUCM_PASSWORD=${CUCM_PASSWORD}
+      - CMS_HOST=${CMS_HOST}
+      - CMS_USERNAME=${CMS_USERNAME}
+      - CMS_PASSWORD=${CMS_PASSWORD}
+    depends_on:
+      - postgres
+    networks:
+      - census-network
+
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_DB=census_db
+      - POSTGRES_USER=census_user
+      - POSTGRES_PASSWORD=census_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - census-network
+
+volumes:
+  postgres_data:
+
+networks:
+  census-network:
+    driver: bridge

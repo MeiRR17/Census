@@ -1,0 +1,54 @@
+# Census Clean - Complete requirements
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+requests>=2.31.0
+zeep>=4.2.1
+lxml>=4.9.0
+polling2>=0.3.0
+
+# LDAP/Active Directory Support
+python-ldap>=3.4.3
+ldap3>=2.9.1
+
+# XML Processing for CUCM AXL
+defusedxml>=0.7.1
+xmltodict>=0.13.0
+
+# Additional HTTP Libraries
+httpx>=0.24.0
+aiohttp>=3.8.0
+
+# Database Migration Support
+alembic>=1.12.0
+
+# Background Tasks
+celery>=5.3.0
+redis>=4.5.0
+
+# Logging and Monitoring
+structlog>=23.1.0
+prometheus-client>=0.17.0
+
+# Security
+cryptography>=41.0.0
+passlib[bcrypt]>=1.7.4
+python-jose[cryptography]>=3.3.0
+
+# Date/Time Utilities
+python-dateutil>=2.8.0
+pytz>=2023.3
+
+# Optional: For development
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+black>=23.0.0
+mypy>=1.0.0
+
+# Optional: For production
+gunicorn>=21.2.0
+nginx>=1.0.0
