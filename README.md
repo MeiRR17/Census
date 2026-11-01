@@ -209,3 +209,7 @@ sdk.get_uccx_queues()
 - ✅ מיקוד כל הפעולות דרך נקודה אחת
 - ✅ שמירת היסטוריה בדאטאבייס
 - ✅ אבטחה - הרשאות רק ב-Census
+
+## Credentials and local configuration
+
+The repository no longer tracks `config/.env`. Copy `config/.env.example` to `config/.env` and set actual credentials locally or through the deployment secret manager. Hosts ending in `.example.invalid` are intentional placeholders; you must replace them for real connections. Do not commit credentials, host inventories, production exports or user information. If secrets in earlier Git commits were real, rotate them and review downstream access; removing a file from HEAD does not remove public Git history.
